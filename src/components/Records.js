@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Record from './Record'
-import axios from 'axios'
+import RecordForm from './RecordForm'
+import * as RecordsApi from '../utils/RecordApi'
 class Records extends Component {
 	constructor() {
 		super();
@@ -11,7 +12,7 @@ class Records extends Component {
 		}
 	}
 	componentDidMount() {
-		axios.get('http://5b068722ff98d70014f3883b.mockapi.io/records').then(
+		RecordsApi.getAll().then(
 			response => this.setState({
 				records: response.data,
 				isLoaded: true
@@ -22,32 +23,62 @@ class Records extends Component {
 				error
 			}))
 	}
+	addRecord(record) {
+		console.log(record);
+		this.setState({
+			error: null,
+			records: [
+				...this.state.records,
+				record
+			],
+			isLoaded: true
+		})
+	}
+	updateRecord(record, data) {
+		const recordIndex = this.state.records.indexOf(record);
+		const newRecords = this.state.records.map((item, index) => {
+			if (index !== recordIndex) {
+				return item;
+			}
+			return {
+				...item,
+				...data
+			}
+		})
+		this.setState({
+			records: newRecords
+		})
+	}
 	render() {
 		const { error, isLoaded, records } = this.state
+		let recordsComponent = ''
 		if (error) {
-			return <div>Error: {error.message}</div>;
+			recordsComponent = <div>Error: {error.message}</div>;
 		} else if (!isLoaded) {
-			return <div>Loading...</div>;
+			recordsComponent = <div>Loading...</div>;
 		} else {
-			return (
-				<div>
-					<h2>Records</h2>
-					<table className="table table-bordered">
-						<thead>
-							<tr>
-								<td>Date</td>
-								<td>Title</td>
-								<td>Ammount</td>
-							</tr>
-						</thead>
-						<tbody>
-							{records.map((record, i) => <Record key={record.id} {...record} />)}
-						</tbody>
-					</table>
-				</div>
+			recordsComponent = (
+				<table className="table table-bordered">
+					<thead>
+						<tr>
+							<td>Date</td>
+							<td>Title</td>
+							<td>Ammount</td>
+						</tr>
+					</thead>
+					<tbody>
+						{records.map((record, i) => <Record key={record.id} record={record} handleEditRecord={this.updateRecord.bind(this)} />)}
+					</tbody>
+				</table>
 			);
 		}
-
+		return (
+			<div>
+				<h2>Records</h2>
+				<RecordForm handleNewRecords={this.addRecord.bind(this)} />
+				{recordsComponent}
+			</div>
+		)
 	}
 }
 
